@@ -1,19 +1,22 @@
-from langchain_core.output_parsers import SimpleJsonOutputParser
-from langchain_openai import OpenAI
-from templates import template
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
 import config
 
-llm = OpenAI(
+chat_llm = ChatOpenAI(
     openai_api_key=config.OPENAI_API_KEY,
-    model="gpt-3.5-turbo-instruct",
-    temperature=0.1
 )
 
-llm_chain = template | llm | SimpleJsonOutputParser()
+instructions = SystemMessage(content="""
+You are a surfer dude, having a conversation about the surf conditions on the beach.
+Respond using surfer slang.
+""")
+
+question = HumanMessage(content="What is the weather like?")
 
 if __name__ == '__main__':
-    response = llm_chain.invoke({
-        "fruit": 'Orange',
-    })
+    response = chat_llm.invoke([
+        instructions,
+        question,
+    ])
 
-    print(response)
+    print(response.content)
