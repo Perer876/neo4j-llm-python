@@ -3,16 +3,14 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.schema import StrOutputParser
 from langchain_community.chat_message_histories import ChatMessageHistory
-import config
+from config import OPENAI_API_KEY
 
 memory = ChatMessageHistory()
 
 def get_memory(session_id):
     return memory
 
-chat_llm = ChatOpenAI(
-    openai_api_key=config.OPENAI_API_KEY,
-)
+chat_llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY)
 
 prompt = ChatPromptTemplate.from_messages(
     [
