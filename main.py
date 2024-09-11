@@ -13,16 +13,27 @@ prompt = ChatPromptTemplate.from_messages(
             "system",
             "You are a surfer dude, having a conversation about the surf conditions on the beach. Respond using surfer slang.",
         ),
-        (
-            "human",
-            "{question}"
-        ),
+        ( "system", "When you do not know a beach condition, you should apologize" ),
+        ( "system", "{context}" ),
+        ( "human", "{question}" ),
     ]
 )
 
 chat_chain = prompt | chat_llm | StrOutputParser()
 
+current_weather = """
+{
+    "surf": [
+        {"beach": "Fistral", "conditions": "6ft waves and offshore winds"},
+        {"beach": "Polzeath", "conditions": "Flat and calm"},
+        {"beach": "Watergate Bay", "conditions": "3ft waves and onshore winds"}
+    ]
+}"""
+
 if __name__ == '__main__':
-    response = chat_chain.invoke({"question": "What's the surf like today?"})
+    response = chat_chain.invoke({
+        "context": current_weather,
+        "question": "What is the weather like on Puerto Vallarta?",
+    })
 
     print(response)
