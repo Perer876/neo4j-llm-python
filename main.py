@@ -2,13 +2,16 @@ from langchain_core.runnables import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.schema import StrOutputParser
-from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_community.chat_message_histories import Neo4jChatMessageHistory
+from db import graph
 from config import OPENAI_API_KEY
+from uuid import uuid4
 
-memory = ChatMessageHistory()
+SESSION_ID = str(uuid4())
+print(f"Session ID: {SESSION_ID}")
 
 def get_memory(session_id):
-    return memory
+    return Neo4jChatMessageHistory(session_id=session_id, graph=graph)
 
 chat_llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY)
 
@@ -54,7 +57,7 @@ if __name__ == '__main__':
 
             },
             config={
-                "configurable": {"session_id": "none"}
+                "configurable": {"session_id": SESSION_ID}
             }
         )
 
