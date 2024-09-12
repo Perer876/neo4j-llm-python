@@ -12,6 +12,8 @@ from uuid import uuid4
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Neo4jVector
 from langchain.chains import RetrievalQA
+from langchain.chains import GraphCypherQAChain
+from langchain.prompts import PromptTemplate
 from config import NEO4J_URL, NEO4J_USERNAME, NEO4J_PASSWORD, OPENAI_API_KEY
 
 SESSION_ID = str(uuid4())
@@ -104,14 +106,24 @@ chat_agent = RunnableWithMessageHistory(
 )
 
 if __name__ == "__main__":
-    while True:
-        q = input("> ")
+    CYPHER_GENERATION_TEMPLATE = """
+    You are an expert Neo4j Developer translating user questions into Cypher to answer questions about movies and provide recommendations.
+    Convert the user's question based on the schema.
 
-        response = chat_agent.invoke(
-            {
-                "input": q
-            },
-            {"configurable": {"session_id": SESSION_ID}},
-        )
+    Schema: {schema}
+    Question: {question}
+    """
 
-        print(response["output"])
+    cypher_generation_prompt = PromptTemplate(
+        template=CYPHER_GENERATION_TEMPLATE,
+        input_variables=["schema", "question"],
+    )
+
+    cypher_chain = GraphCypherQAChain.from_llm(
+        llm,
+        graph=graph,
+        cypher_prompt=cypher_generation_prompt,
+        verbose=True
+    )
+
+    cypher_chain.invoke({"query": "What is the plot of the movie Toy Story?"})
