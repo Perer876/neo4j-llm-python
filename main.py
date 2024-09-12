@@ -11,6 +11,7 @@ from langchain_community.graphs import Neo4jGraph
 from uuid import uuid4
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Neo4jVector
+from langchain.chains import RetrievalQA
 from config import NEO4J_URL, NEO4J_USERNAME, NEO4J_PASSWORD, OPENAI_API_KEY
 
 SESSION_ID = str(uuid4())
@@ -34,6 +35,13 @@ movie_plot_vector = Neo4jVector.from_existing_index(
     index_name="moviePlots",
     embedding_node_property="plotEmbedding",
     text_node_property="plot",
+)
+
+plot_retriever = RetrievalQA.from_llm(
+    llm=llm,
+    retriever=movie_plot_vector.as_retriever(),
+    verbose=True,
+    return_source_documents=True
 )
 
 prompt = ChatPromptTemplate.from_messages(
@@ -60,6 +68,12 @@ def call_trailer_search(question):
     return youtube.run(question)
 
 
+def call_name_search(question: str):
+    return plot_retriever.invoke(
+        {"query": question}
+    )
+
+
 tools = [
     Tool.from_function(
         name="Movie Chat",
@@ -69,6 +83,11 @@ tools = [
     Tool.from_function(
         name="Movie Trailer Search",
         description="Use when needing to find a movie trailer. The question will include the word trailer. Return a link to a YouTube video.",
+        func=call_trailer_search,
+    ),
+    Tool.from_function(
+        name="Movie Name Search",
+        description="Use when needing to find a movie name based on a given plot. The question will include a description of the movie (the plot). Return the name of the movie.",
         func=call_trailer_search,
     ),
 ]
@@ -85,6 +104,14 @@ chat_agent = RunnableWithMessageHistory(
 )
 
 if __name__ == "__main__":
-    result = movie_plot_vector.similarity_search("A movie where a man forgets he killed his wife.")
-    for doc in result:
-        print(doc.metadata["title"], "-", doc.page_content)
+    while True:
+        q = input("> ")
+
+        response = chat_agent.invoke(
+            {
+                "input": q
+            },
+            {"configurable": {"session_id": SESSION_ID}},
+        )
+
+        print(response["output"])
